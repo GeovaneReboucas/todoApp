@@ -14,6 +14,12 @@ class _TodoListPageState extends State<TodoListPage> {
 
   final TextEditingController todoController = TextEditingController();
 
+  void onDelete(Todo todo){
+    setState(() {
+      todos.remove(todo);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,6 +75,7 @@ class _TodoListPageState extends State<TodoListPage> {
                     for (Todo todo in todos)
                       TodoListItem(
                         todo: todo,
+                        delete: onDelete,
                       ),
                   ],
                 ),
