@@ -1,7 +1,6 @@
-// import 'dart:html';
-
 import 'package:flutter/material.dart';
 import 'package:lista_tarefas/models/todo.dart';
+import 'package:lista_tarefas/repositories/todo_repository.dart';
 import 'package:lista_tarefas/widgets/Todo_list_item.dart';
 
 class TodoListPage extends StatefulWidget {
@@ -17,7 +16,20 @@ class _TodoListPageState extends State<TodoListPage> {
   Todo? deletedTodo;
   int? deletedTodoPos;
 
+  String? errorText = null;
+
   final TextEditingController todoController = TextEditingController();
+  final TodoRepository todoRepository = TodoRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    todoRepository.getTodoList().then((value) {
+      setState(() {
+        todos = value;
+      });
+    });
+  }
 
   void onDelete(Todo todo) {
     deletedTodo = todo;
@@ -26,6 +38,7 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       todos.remove(todo);
     });
+    todoRepository.saveTodoList(todos);
 
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -37,11 +50,12 @@ class _TodoListPageState extends State<TodoListPage> {
         backgroundColor: Colors.white,
         action: SnackBarAction(
           label: 'Desfazer',
-          textColor: const Color(0xff00b5f4),
+          textColor: const Color.fromARGB(255, 33, 102, 116),
           onPressed: () {
             setState(() {
               todos.insert(deletedTodoPos!, deletedTodo!);
             });
+            todoRepository.saveTodoList(todos);
           },
         ),
         duration: const Duration(seconds: 3),
@@ -54,15 +68,15 @@ class _TodoListPageState extends State<TodoListPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Limpar tudo?'),
-        content: const Text(
-            'A confirmação deste campo apagará toda lista de tarefas.'),
+        content:
+            const Text('A confirmação deste campo apagará todas as tarefas.'),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
             style: TextButton.styleFrom(
-              primary: Color(0xFF1485F7),
+              primary: Color.fromARGB(255, 33, 102, 116),
             ),
             child: Text('Cancelar'),
           ),
@@ -85,6 +99,7 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       todos.clear();
     });
+    todoRepository.saveTodoList(todos);
   }
 
   @override
@@ -107,12 +122,20 @@ class _TodoListPageState extends State<TodoListPage> {
                         color: Colors.white,
                       ),
                       cursorColor: Colors.white,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                          color: Colors.white,
+                        )),
                         border: OutlineInputBorder(),
                         labelText: 'Adicione uma tarefa',
-                        // labelStyle: TextStyle(color: Colors.white),
-                        // fillColor: Colors.white,
+                        labelStyle: TextStyle(color: Colors.white),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                          color: Colors.white,
+                        )),
                         hintText: 'Ex: Estudar flutter',
+                        errorText: errorText,
                         hintStyle: TextStyle(
                             color: Color.fromARGB(255, 160, 160, 160)),
                       ),
@@ -124,25 +147,34 @@ class _TodoListPageState extends State<TodoListPage> {
                   ElevatedButton(
                     onPressed: () {
                       String text = todoController.text;
-                      bool verificationText = text.isNotEmpty && text[0] != ' ';
+                      bool verificationText = text.isEmpty || text[0] == ' ';
 
                       if (verificationText) {
                         setState(() {
-                          Todo newTodo = Todo(
-                            title: text,
-                            dateTime: DateTime.now(),
-                          );
-                          todos.add(newTodo);
+                          errorText = 'O campo não pode ser vazio!';
+                          todoController.clear();
                         });
+                        return;
                       }
+
+                      setState(() {
+                        Todo newTodo = Todo(
+                          title: text,
+                          dateTime: DateTime.now(),
+                        );
+                        todos.add(newTodo);
+                        errorText = null;
+                      });
                       todoController.clear();
+                      todoRepository.saveTodoList(todos);
                     },
                     style: ElevatedButton.styleFrom(
-                      primary: Color(0xFF1485F7),
+                      primary: Colors.white,
                       padding: const EdgeInsets.all(13),
                     ),
                     child: const Icon(
                       Icons.add,
+                      color: Color.fromARGB(255, 31, 114, 133),
                       size: 30,
                     ),
                   ),
@@ -175,9 +207,9 @@ class _TodoListPageState extends State<TodoListPage> {
                   ),
                   ElevatedButton(
                     onPressed: showDeletedAll,
-                    child: const Text('Limpar tudo'),
+                    child: const Text('Limpar tudo', style: TextStyle(color: Color.fromARGB(255, 33, 102, 116)),),
                     style: ElevatedButton.styleFrom(
-                      primary: const Color(0xFF1485F7),
+                      primary: const Color(0xFFFFFFFF),
                     ),
                   ),
                 ],
